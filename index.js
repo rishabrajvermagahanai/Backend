@@ -3,6 +3,7 @@ const bodyParser = require("body-parser");
 const mongoose = require("mongoose");
 const cors = require("cors");
 const userController = require("./controller/user");
+const paymentController=require('./controller/paymentController')
 
 const app = express();
 
@@ -30,6 +31,11 @@ app.post("/signup", userController.signup);
 app.post("/signin", userController.signin);
 app.post("/submit-otp", userController.submitotp);
 app.post("/send-otp", userController.sendotp);
+
+              
+app.post('/orders',paymentController.orders)
+app.post('/verify',paymentController.verify)
+
 
 app.listen(5000, () => {
   console.log(`Backend Running At Port 5000`);
