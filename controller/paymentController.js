@@ -1,13 +1,14 @@
 const Razorpay = require("razorpay");
-const RAZORPAY_KEY = "rzp_test_JEWW6lKdPr0kPa";
-const RAZORPAY_SECRET = "QWV1OjVPWTRPGwdZRF8za9on";
-var crypto = require("crypto");
+const crypto = require("crypto");
+require("dotenv").config({ path: "config/config.env" });
+const PaymentModel = require("../models/paymentModels.js");
 
 module.exports.orders = async (req, res) => {
+  const email = req.body.email;
   try {
     const instance = new Razorpay({
-      key_id: RAZORPAY_KEY,
-      key_secret: RAZORPAY_SECRET,
+      key_id: process.env.KEY,
+      key_secret: process.env.SECRET,
     });
 
     const options = {
@@ -20,31 +21,67 @@ module.exports.orders = async (req, res) => {
     if (!order) return res.status(500).send("Some error occured");
 
     res.json(order);
-   // console.log(order);
+    // console.log(order);
+
+    const paymentModel = new PaymentModel({
+      razorpay_order_id: order.id,
+      user_email: email,
+      PAYMENT: "NOT DONE",
+    });
+    paymentModel.save();
+    console.log("order saved");
   } catch (error) {
     res.status(500).send(error);
   }
 };
 
+module.exports.verify = async (req, res) => {
+  try {
+    let body = await (req.body.response.razorpay_order_id +
+      "|" +
+      req.body.response.razorpay_payment_id);
 
-
-module.exports.verify = async(req,res) => {
-   
-try{
-    let body =await (req.body.response.razorpay_order_id + "|" + req.body.response.razorpay_payment_id);
-
-    var expectedSignature =await crypto.createHmac('sha256', RAZORPAY_SECRET).update(body.toString()).digest('hex');
-   }catch(error){
+    var expectedSignature = await crypto
+      .createHmac("sha256", process.env.SECRET)
+      .update(body.toString())
+      .digest("hex");
+  } catch (error) {
     res.status(500).send(error);
-   }
+  }
 
-    if (expectedSignature === req.body.response.razorpay_signature) {
-        res.send({ code: 200, message: 'Sign Valid' });
+  if (expectedSignature === req.body.response.razorpay_signature) {
+    const { razorpay_order_id, razorpay_payment_id, razorpay_signature } =
+      req.body.response;
 
-        //database comes here
-        console.log("data can be store in data base WHEN payment is success :--"+req.body)
-    } else {
-        console.log("INvalid")
-        res.send({ code: 500, message: 'Sign Invalid' });
-    }
+    //database comes here
+
+    PaymentModel.findOne({ razorpay_order_id: razorpay_order_id })
+      .then(async (result) => {
+        if (result) {
+          // Create a single update object with the fields you want to update
+          const updateData = {
+            user_email: result.user_email,
+            razorpay_order_id: result.razorpay_order_id,
+            razorpay_payment_id: razorpay_payment_id,
+            razorpay_signature: razorpay_signature,
+            PAYMENT: "COMPLITED",
+          };
+
+          await PaymentModel.updateOne(
+            { razorpay_order_id: result.razorpay_order_id },
+            updateData
+          );
+
+          console.log("Payment successful.");
+        } else {
+          console.log("Document not found.");
+        }
+      })
+      .catch((err) => {
+        console.log("Server err: " + err);
+      });
+  } else {
+    console.log("INvalid");
+    res.send({ code: 500, message: "Sign Invalid" });
+  }
 };

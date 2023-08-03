@@ -3,7 +3,6 @@ const nodemailer = require("nodemailer");
 const notifier = require('node-notifier');
 
 module.exports.signup = async (req, res) => {
-  console.log(req.body);
 
   const newUser = new UserModel({
     email: req.body.email,
@@ -111,7 +110,6 @@ module.exports.sendotp = async (req, res) => {
 };
 
 module.exports.submitotp = (req, res) => {
-  console.log(req.body);
 
   UserModel.findOne({ otp: req.body.otp })
     .then((result) => {
