@@ -7,6 +7,8 @@ module.exports.signup = async (req, res) => {
   const newUser = new UserModel({
     email: req.body.email,
     password: req.body.password,
+    name: req.body.name,
+    mobile: req.body.mobile,
   });
 
   // email should not exist alreday
