@@ -8,6 +8,11 @@ const paymentController = require("./controller/paymentController");
 
 const app = express();
 
+// Set the view engine to EJS
+app.set('view engine', 'ejs');
+// Specify the views directory
+app.set('views','./views');
+
 app.use(cors());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
@@ -22,7 +27,7 @@ mongoose
   .then(() => console.log("Connected to MongoDB"))
   .catch((err) => console.error("Error in connecting to MongoDB:", err));
 
-
+app.get("/signupverify",userController.verifyMail)
 app.post("/signup", userController.signup);
 app.post("/signin", userController.signin);
 app.post("/submit-otp", userController.submitotp);
